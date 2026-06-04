@@ -177,4 +177,8 @@ export class PlayerController {
   isMountedOnHorse(): boolean {
     return this.isMounted;
   }
+
+  getCamera(): ArcRotateCamera {
+    return this.camera;
+  }
 }

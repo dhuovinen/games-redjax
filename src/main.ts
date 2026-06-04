@@ -13,6 +13,7 @@ import { TerrainManager }    from "@world/terrain/TerrainManager";
 import { SkyController }     from "@world/environment/SkyController";
 import { WeatherController } from "@world/environment/WeatherController";
 import { VegetationManager } from "@world/environment/VegetationManager";
+import { PostProcessController } from "@world/environment/PostProcessController";
 
 // Entities
 import { PlayerController }  from "@entities/player/PlayerController";
@@ -55,6 +56,9 @@ async function main(): Promise<void> {
   const sg = sky.getShadowGenerator();
   player.visual.getMeshes().forEach((m) => sg.addShadowCaster(m));
   horse.visual.getMeshes().forEach((m)  => sg.addShadowCaster(m));
+
+  // ── Post-processing ────────────────────────────────────────────────────────
+  new PostProcessController(scene, player.getCamera());
 
   // ── UI ────────────────────────────────────────────────────────────────────
   new HudController(hudRoot);

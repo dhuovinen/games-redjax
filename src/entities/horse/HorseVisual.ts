@@ -65,6 +65,20 @@ export class HorseVisual {
       return m;
     };
 
+    const cyl = (
+      name: string, dia: number, h: number,
+      parent: TransformNode, px: number, py: number, pz: number,
+      material: StandardMaterial
+    ): Mesh => {
+      const m = MeshBuilder.CreateCylinder(`horse_${name}`, { diameter: dia, height: h, tessellation: 8 }, scene);
+      m.parent = parent;
+      m.position.set(px, py, pz);
+      m.material = material;
+      m.receiveShadows = true;
+      this._meshes.push(m);
+      return m;
+    };
+
     // ── Body ──────────────────────────────────────────────────────────────
     box("body", 0.88, 0.80, 1.88, this.root, 0, 1.10, 0, bodyM);
 
@@ -108,25 +122,25 @@ export class HorseVisual {
     this.flPivot = new TransformNode("horse_fl", scene);
     this.flPivot.parent = this.root;
     this.flPivot.position.set(-hipX, legPivotY, hipFZ);
-    box("fl", 0.22, 0.70, 0.22, this.flPivot, 0, -0.35, 0, legM);
-    box("flH", 0.24, 0.10, 0.24, this.flPivot, 0, -0.72, 0, darkM); // hoof
+    cyl("fl", 0.20, 0.70, this.flPivot, 0, -0.35, 0, legM);
+    box("flH", 0.24, 0.10, 0.24, this.flPivot, 0, -0.72, 0, darkM);
 
     this.frPivot = new TransformNode("horse_fr", scene);
     this.frPivot.parent = this.root;
     this.frPivot.position.set(hipX, legPivotY, hipFZ);
-    box("fr", 0.22, 0.70, 0.22, this.frPivot, 0, -0.35, 0, legM);
+    cyl("fr", 0.20, 0.70, this.frPivot, 0, -0.35, 0, legM);
     box("frH", 0.24, 0.10, 0.24, this.frPivot, 0, -0.72, 0, darkM);
 
     this.blPivot = new TransformNode("horse_bl", scene);
     this.blPivot.parent = this.root;
     this.blPivot.position.set(-hipX, legPivotY, hipBZ);
-    box("bl", 0.22, 0.70, 0.22, this.blPivot, 0, -0.35, 0, legM);
+    cyl("bl", 0.20, 0.70, this.blPivot, 0, -0.35, 0, legM);
     box("blH", 0.24, 0.10, 0.24, this.blPivot, 0, -0.72, 0, darkM);
 
     this.brPivot = new TransformNode("horse_br", scene);
     this.brPivot.parent = this.root;
     this.brPivot.position.set(hipX, legPivotY, hipBZ);
-    box("br", 0.22, 0.70, 0.22, this.brPivot, 0, -0.35, 0, legM);
+    cyl("br", 0.20, 0.70, this.brPivot, 0, -0.35, 0, legM);
     box("brH", 0.24, 0.10, 0.24, this.brPivot, 0, -0.72, 0, darkM);
   }
 

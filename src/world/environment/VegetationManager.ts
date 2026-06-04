@@ -63,17 +63,20 @@ export class VegetationManager {
     const rockM        = mat("rock",        0.44, 0.40, 0.36, 0.12);
     const shrubM       = mat("shrub",       0.38, 0.32, 0.18, 0.18);
 
-    const treeTrunk = MeshBuilder.CreateBox("t_trunk", { width: 0.32, height: 1.0, depth: 0.32 }, this.scene);
+    // Cylinder trunk — low tessellation for low-poly western feel
+    const treeTrunk = MeshBuilder.CreateCylinder("t_trunk", { diameter: 0.32, height: 1.0, tessellation: 6 }, this.scene);
     treeTrunk.material = treeTrunkM;
     treeTrunk.isVisible = false;
     treeTrunk.isPickable = false;
 
-    const treeFoliage = MeshBuilder.CreateBox("t_foliage", { width: 1.6, height: 1.4, depth: 1.6 }, this.scene);
+    // Sphere foliage — organic silhouette
+    const treeFoliage = MeshBuilder.CreateSphere("t_foliage", { diameter: 1.75, segments: 5 }, this.scene);
     treeFoliage.material = treeFoliageM;
     treeFoliage.isVisible = false;
     treeFoliage.isPickable = false;
 
-    const cactusBody = MeshBuilder.CreateBox("t_cactus", { width: 0.26, height: 1.8, depth: 0.26 }, this.scene);
+    // Cylinder cactus body
+    const cactusBody = MeshBuilder.CreateCylinder("t_cactus", { diameter: 0.26, height: 1.8, tessellation: 6 }, this.scene);
     cactusBody.material = cactusM;
     cactusBody.isVisible = false;
     cactusBody.isPickable = false;
