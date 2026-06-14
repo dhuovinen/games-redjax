@@ -167,6 +167,12 @@ export class PlayerController {
     bus.emit("player:healthChanged", { current: this.health, max: PLAYER_MAX_HEALTH });
   }
 
+  /** Reset to the spawn point with full health (on foot). */
+  respawn(): void {
+    this.restoreFullHealth();
+    if (!this.isMounted) this.mesh.position.set(0, 5, 0);
+  }
+
   getPosition(): Vector3 {
     return this.mesh.position.clone();
   }

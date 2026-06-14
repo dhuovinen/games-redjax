@@ -48,6 +48,7 @@ export class Minimap {
       this.blips.set(id, { type, x: position.x, z: position.z });
     });
     bus.on("encounter:resolved", ({ id }) => this.blips.delete(id));
+    bus.on("player:died", () => this.blips.clear());
 
     this.loop();
   }

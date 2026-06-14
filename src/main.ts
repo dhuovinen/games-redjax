@@ -137,6 +137,32 @@ async function main(): Promise<void> {
     });
   });
 
+  // ── Bandits damage the player ──────────────────────────────────────────────
+  bus.on("npc:attackedPlayer", ({ damage }) => {
+    if (player.isAlive()) player.takeDamage(damage);
+  });
+
+  // ── Encounter resolution: an ambush is over once every bandit is down ──────
+  bus.on("combat:npcKilled", ({ npcId }) => {
+    for (const [encId, npcs] of activeNpcs) {
+      if (!npcs.some((n) => n.id === npcId)) continue;
+      if (npcs[0].isInnocent) break;                 // travelers resolve on a timer
+      if (npcs.every((n) => !n.getIsAlive())) {
+        encounterMgr.resolve(encId);                 // emits encounter:resolved + cooldown
+        activeNpcs.delete(encId);
+        setTimeout(() => npcs.forEach((n) => n.dispose()), 3000);
+      }
+      break;
+    }
+  });
+
+  // ── Player death → clear the field and respawn at the homestead ────────────
+  bus.on("player:died", () => {
+    activeNpcs.forEach((npcs) => npcs.forEach((n) => n.dispose()));
+    activeNpcs.clear();
+    player.respawn();
+  });
+
   // ── Shooting (left click) ─────────────────────────────────────────────────
   scene.onPointerDown = (evt) => {
     if (evt.button !== 0) return;

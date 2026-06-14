@@ -12,9 +12,12 @@ import type { Vec3 } from "@shared/types";
 
 export type NpcRole = "bandit" | "traveler";
 
-const NPC_CHASE_SPEED = 3.2;
-const NPC_CHASE_RANGE = 28;
-const NPC_STOP_RANGE  = 2.5;
+const NPC_CHASE_SPEED   = 3.2;
+const NPC_CHASE_RANGE   = 28;
+const NPC_STOP_RANGE    = 2.5;
+const NPC_ATTACK_RANGE  = 3.2;
+const NPC_ATTACK_INTERVAL = 1.4; // seconds between strikes
+const NPC_ATTACK_DAMAGE = 7;
 
 export class NpcController {
   readonly id: string;
@@ -26,6 +29,8 @@ export class NpcController {
   private isAlive = true;
   private facingAngle = 0;
   private threatIndicator: Mesh | null = null;
+  private attackTimer = NPC_ATTACK_INTERVAL;
+  private attackPulse = 0; // brief telegraph after a strike
 
   constructor(
     scene: Scene,
@@ -63,10 +68,26 @@ export class NpcController {
 
     const dist = Vector3.Distance(playerPosition, this.mesh.position);
 
-    if (dist < NPC_CHASE_RANGE && dist > NPC_STOP_RANGE) {
-      const dir = playerPosition.subtract(this.mesh.position).normalize();
-      this.mesh.position.addInPlace(dir.scale(NPC_CHASE_SPEED * deltaSeconds));
+    // Face & approach the player while within awareness range
+    let isMoving = false;
+    if (dist < NPC_CHASE_RANGE) {
+      const dir = playerPosition.subtract(this.mesh.position);
+      dir.y = 0;
+      dir.normalize();
       this.facingAngle = Math.atan2(dir.x, dir.z);
+      if (dist > NPC_STOP_RANGE) {
+        this.mesh.position.addInPlace(dir.scale(NPC_CHASE_SPEED * deltaSeconds));
+        isMoving = true;
+      }
+    }
+
+    // Strike when in melee range
+    this.attackTimer -= deltaSeconds;
+    if (this.attackPulse > 0) this.attackPulse -= deltaSeconds;
+    if (dist <= NPC_ATTACK_RANGE && this.attackTimer <= 0) {
+      this.attackTimer = NPC_ATTACK_INTERVAL;
+      this.attackPulse = 0.25;
+      bus.emit("npc:attackedPlayer", { damage: NPC_ATTACK_DAMAGE });
     }
 
     const groundY = terrainSampleHeight(this.mesh.position.x, this.mesh.position.z);
@@ -75,12 +96,12 @@ export class NpcController {
 
     if (this.threatIndicator) {
       this.threatIndicator.position.set(this.mesh.position.x, groundY + 2.5, this.mesh.position.z);
-      // Slow spin so the cube is recognizable from any angle
       this.threatIndicator.rotation.y += 1.5 * deltaSeconds;
+      // Pulse larger right after a strike as a visible attack tell
+      const s = this.attackPulse > 0 ? 1.8 : 1.0;
+      this.threatIndicator.scaling.set(s, s, s);
     }
 
-    // Simple walk animation when chasing
-    const isMoving = dist < NPC_CHASE_RANGE && dist > NPC_STOP_RANGE;
     this.visual.animate(isMoving, 0.5, deltaSeconds);
   }
 

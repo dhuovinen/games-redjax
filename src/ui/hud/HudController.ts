@@ -16,6 +16,8 @@ export class HudController {
   private honorDot: HTMLElement;
   private timeDisplay: HTMLElement;
   private notification: HTMLElement;
+  private damageFlash: HTMLElement;
+  private lastHealth = Infinity;
   private notifTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(container: HTMLElement) {
@@ -27,6 +29,7 @@ export class HudController {
     this.honorDot = this.root.querySelector("#honor-dot")!;
     this.timeDisplay = this.root.querySelector("#time-display")!;
     this.notification = this.root.querySelector("#notification")!;
+    this.damageFlash = this.root.querySelector("#damage-flash")!;
 
     this.bindEvents();
   }
@@ -60,6 +63,8 @@ export class HudController {
 
       <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;background:#fff;border-radius:50%;opacity:0.7;pointer-events:none;"></div>
 
+      <div id="damage-flash" style="position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 0.45s;background:radial-gradient(ellipse at center, rgba(140,0,0,0) 45%, rgba(150,0,0,0.55) 100%);"></div>
+
       <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:18px;pointer-events:none;white-space:nowrap;">
         <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">WASD</span> Move</span>
         <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">Shift</span> Sprint</span>
@@ -73,6 +78,8 @@ export class HudController {
   private bindEvents(): void {
     bus.on("player:healthChanged", ({ current, max }) => {
       this.healthFill.style.width = `${(current / max) * 100}%`;
+      if (current < this.lastHealth) this.flashDamage();
+      this.lastHealth = current;
     });
 
     bus.on("honor:changed", ({ tier }) => {
@@ -106,6 +113,19 @@ export class HudController {
     bus.on("player:mounted", () => {
       this.showNotification("Riding");
     });
+
+    bus.on("encounter:resolved", () => {
+      this.showNotification("The area is clear");
+    });
+
+    bus.on("player:died", () => {
+      this.showNotification("You were killed");
+    });
+  }
+
+  private flashDamage(): void {
+    this.damageFlash.style.opacity = "1";
+    setTimeout(() => { this.damageFlash.style.opacity = "0"; }, 120);
   }
 
   private showNotification(text: string): void {
