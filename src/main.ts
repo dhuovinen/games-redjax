@@ -1,4 +1,4 @@
-import { Engine, Scene } from "@babylonjs/core";
+import { Engine, Scene, Vector3 } from "@babylonjs/core";
 
 // Core systems
 import { DayNightCycle }     from "@core/time/DayNightCycle";
@@ -19,11 +19,13 @@ import { PostProcessController } from "@world/environment/PostProcessController"
 import { PlayerController }  from "@entities/player/PlayerController";
 import { HorseController }   from "@entities/horse/HorseController";
 import { NpcController }     from "@entities/npc/NpcController";
+import { Campfire }          from "@entities/camp/Campfire";
 
 // UI
 import { HudController }     from "@ui/hud/HudController";
 import { Minimap }           from "@ui/hud/Minimap";
 import { PauseMenu }         from "@ui/menus/PauseMenu";
+import { RestMenu }          from "@ui/menus/RestMenu";
 
 // Bus
 import { bus } from "@shared/EventBus";
@@ -55,10 +57,15 @@ async function main(): Promise<void> {
   const player = new PlayerController(scene, deadEye, terrain);
   const horse  = new HorseController(scene, horseBonding, terrain, player);
 
-  // Register player + horse meshes as shadow casters
+  // Campfire near spawn — a rest point
+  const campX = 6, campZ = 6;
+  const campfire = new Campfire(scene, { x: campX, y: terrain.sampleHeight(campX, campZ), z: campZ });
+
+  // Register player + horse + campfire meshes as shadow casters
   const sg = sky.getShadowGenerator();
   player.visual.getMeshes().forEach((m) => sg.addShadowCaster(m));
   horse.visual.getMeshes().forEach((m)  => sg.addShadowCaster(m));
+  campfire.getShadowCasters().forEach((m) => sg.addShadowCaster(m));
 
   // ── Post-processing ────────────────────────────────────────────────────────
   new PostProcessController(scene, player.getCamera());
@@ -74,9 +81,16 @@ async function main(): Promise<void> {
     MAX_TERRAIN_HEIGHT
   );
 
-  // Pause menu gates the simulation; rendering continues so the frozen frame stays visible
-  let paused = false;
-  new PauseMenu(hudRoot, (p) => { paused = p; });
+  // Pause menu + rest menu both gate the simulation; rendering continues so
+  // the frozen frame stays visible.
+  let pauseOpen = false;
+  let restOpen  = false;
+  new PauseMenu(hudRoot, (p) => { pauseOpen = p; });
+  const restMenu = new RestMenu(
+    hudRoot,
+    (hour) => { dayNight.setTime(hour); player.restoreFullHealth(); },
+    (open) => { restOpen = open; }
+  );
 
   // Dead Eye canvas filter for sepia slow-motion feel
   bus.on("deadeye:activated",   () => { canvas.style.filter = "sepia(0.45) contrast(1.15)"; });
@@ -154,8 +168,8 @@ async function main(): Promise<void> {
     const rawDelta = (now - lastTime) / 1000;
     lastTime = now;
 
-    // Paused: keep presenting the last frame but advance no simulation
-    if (paused) {
+    // Paused (pause menu or rest panel open): present the last frame, no sim
+    if (pauseOpen || restOpen) {
       scene.render();
       return;
     }
@@ -179,6 +193,12 @@ async function main(): Promise<void> {
     // Entities
     player.update(gameDelta);
     horse.update(gameDelta);
+
+    // Campfire flicker + rest proximity (only available on foot)
+    campfire.update(gameDelta);
+    const nearFire = !player.isMountedOnHorse() &&
+      Vector3.Distance(playerPos, campfire.getPosition()) < 4;
+    restMenu.setNearby(nearFire);
 
     // NPC AI
     activeNpcs.forEach((npcs) => {

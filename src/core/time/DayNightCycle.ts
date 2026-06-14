@@ -36,6 +36,18 @@ export class DayNightCycle {
     bus.emit("time:tick", { time: { ...this.time } });
   }
 
+  /** Jump forward to the next occurrence of the given hour (used by camp rest). */
+  setTime(hour: number, minute = 0): void {
+    const current = this.time.hour + this.time.minute / 60;
+    const target  = hour + minute / 60;
+    if (target <= current) this.time.day += 1; // wrapped into the next day
+    this.time.hour = hour;
+    this.time.minute = minute;
+    this.accumulatedSeconds = 0;
+    bus.emit("time:hourChanged", { hour });
+    bus.emit("time:tick", { time: { ...this.time } });
+  }
+
   getTime(): Readonly<GameTime> {
     return this.time;
   }

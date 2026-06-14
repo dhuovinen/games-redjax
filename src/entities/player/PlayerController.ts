@@ -162,6 +162,11 @@ export class PlayerController {
     if (this.health <= 0) bus.emit("player:died");
   }
 
+  restoreFullHealth(): void {
+    this.health = PLAYER_MAX_HEALTH;
+    bus.emit("player:healthChanged", { current: this.health, max: PLAYER_MAX_HEALTH });
+  }
+
   getPosition(): Vector3 {
     return this.mesh.position.clone();
   }

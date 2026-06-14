@@ -42,8 +42,8 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Minimap (top-down canvas, player heading + encounter blips)
 - [x] Pause menu (Esc — controls reference, gates simulation)
 - [x] Build + deploy to static host (Vercel, auto-deploy on push)
+- [x] Camp/fire rest mechanic (time skip + health regen)
 - [ ] Encounter: injured traveler dialogue pop-up
-- [ ] Camp/fire rest mechanic (time skip + health regen)
 - [ ] Ambient audio (wind loop, gunshots, hoofbeats — Web Audio)
 - [ ] Settings (volume, sensitivity)
 - [ ] Performance pass — profile and tune LOD distances
