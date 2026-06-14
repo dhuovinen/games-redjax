@@ -76,3 +76,73 @@
 **Consequences:**
 - Demo is completable in 6 weeks vs. 6 months
 - Architecture is designed to accommodate deferred systems without refactoring
+
+---
+
+## ADR-006 — Procedural Web Audio instead of audio assets
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** The project ships no binary assets — terrain, vegetation, and
+characters are all procedural. Audio risked being the first thing to require
+committed asset files (and their licensing/size cost).
+
+**Decision:** Synthesize all sound at runtime with the raw Web Audio API in a
+dedicated `src/audio/` output layer. Wind is filtered looping noise; gunshots
+are a noise burst with a lowpass sweep; hoofbeats and thuds are enveloped
+oscillators. The layer subscribes to `EventBus` and is ticked once per frame
+only for hoofbeat scheduling.
+
+**Consequences:**
+- Zero audio assets; the deployable bundle stays JS-only
+- `AudioContext` must be created lazily and resumed on first user gesture
+  (browser autoplay policy)
+- Sound quality is "stylized", not realistic — acceptable for the slice
+- A new top-level layer (`audio/`) sits alongside `world/` and `entities/` as
+  a renderer/output concern, not game logic
+
+---
+
+## ADR-007 — Babylon core kept as a single vendor chunk
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** `@babylonjs/core` minifies to ~5 MB, tripping Vite's chunk-size
+warning. Splitting it internally (by submodule) would enable parallel loading
+but risks runtime "cannot access before initialization" errors from Babylon's
+internal circular dependencies — failures that don't appear at build time and
+can't be browser-verified in this environment before auto-deploy.
+
+**Decision:** Route `@babylonjs/core` to one `babylon` chunk, materials and
+loaders to their own chunks, everything else to `vendor`. Raise
+`chunkSizeWarningLimit` to 6000. App code already splits out separately
+(~17 KB gzip).
+
+**Consequences:**
+- One large but stable vendor chunk that the browser caches across deploys
+- No risk of split-induced runtime breakage
+- First load transfers ~1.1 MB gzip of Babylon; subsequent loads are cached
+
+---
+
+## ADR-008 — Phase 3 performance pass: static freezing over LOD cuts
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** The slice targets 60 fps on mid-range hardware. The cheapest wins
+were sought before touching gameplay-visible draw distance.
+
+**Decision:** Cap render resolution at 1.5× DPI, disable pointer-move picking,
+freeze world matrices + materials on static terrain/vegetation, and enable
+`blockMaterialDirtyMechanism` after load. `LOAD_RADIUS` stays at 3 — fog hides
+the streaming boundary, so cutting it would be visible.
+
+**Consequences:**
+- Largest GPU saving (DPI cap) costs nothing visually at 1.5×
+- Freezing is safe only because these meshes never move; dynamic entities
+  (player, horse, NPCs, campfire flame, sky) are deliberately left unfrozen
+- New runtime materials (NPCs spawned mid-game) still compile correctly under
+  `blockMaterialDirtyMechanism`, which only blocks per-frame dirty scanning
