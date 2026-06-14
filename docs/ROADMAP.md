@@ -31,18 +31,22 @@ Goal: The vertical slice is playable end-to-end.
 - [ ] Horse gallop animation (placeholder skeleton animation)
 - [ ] NPC death animation (ragdoll or fall-over tween)
 
-## Phase 3 — Polish
+## Phase 3 — Polish (in progress)
 
 Goal: Demo-ready. 10-minute play session feels cinematic.
 
-- [ ] Golden hour / sunrise / sunset atmospheric scattering
-- [ ] Shadow casting from directional light
+- [x] Golden hour / sunrise / sunset atmospheric scattering (SkyMaterial)
+- [x] Shadow casting from directional light (2048 PCF soft shadows)
+- [x] Post-processing: bloom, ACES tone mapping, vignette, grain, SSAO, MSAA
+- [x] Vertex-colored terrain (height/slope zone blending)
+- [x] Minimap (top-down canvas, player heading + encounter blips)
+- [x] Pause menu (Esc — controls reference, gates simulation)
+- [x] Build + deploy to static host (Vercel, auto-deploy on push)
 - [ ] Encounter: injured traveler dialogue pop-up
-- [ ] Minimap (render texture of world from above)
 - [ ] Camp/fire rest mechanic (time skip + health regen)
-- [ ] Pause menu + settings (volume, sensitivity)
+- [ ] Ambient audio (wind loop, gunshots, hoofbeats — Web Audio)
+- [ ] Settings (volume, sensitivity)
 - [ ] Performance pass — profile and tune LOD distances
-- [ ] Build + deploy to static host (Netlify / Vercel)
 
 ## Deferred (Post-Slice)
 

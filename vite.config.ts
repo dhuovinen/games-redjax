@@ -13,12 +13,18 @@ export default defineConfig({
   },
   build: {
     target: "es2020",
+    // Babylon core is legitimately ~5 MB in one chunk; splitting its internals
+    // risks runtime circular-dependency errors, so it stays a single cacheable
+    // vendor chunk. App code is already split out separately (~12 KB gzip).
+    chunkSizeWarningLimit: 6000,
     rollupOptions: {
       output: {
-        manualChunks: {
-          babylon: ["@babylonjs/core"],
-          babylonLoaders: ["@babylonjs/loaders"],
-          babylonMaterials: ["@babylonjs/materials"],
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return undefined; // app code chunk
+          if (id.includes("@babylonjs/materials")) return "babylonMaterials";
+          if (id.includes("@babylonjs/loaders")) return "babylonLoaders";
+          if (id.includes("@babylonjs/core")) return "babylon";
+          return "vendor"; // any other third-party dep
         },
       },
     },

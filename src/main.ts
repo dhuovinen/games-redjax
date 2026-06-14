@@ -22,9 +22,12 @@ import { NpcController }     from "@entities/npc/NpcController";
 
 // UI
 import { HudController }     from "@ui/hud/HudController";
+import { Minimap }           from "@ui/hud/Minimap";
+import { PauseMenu }         from "@ui/menus/PauseMenu";
 
 // Bus
 import { bus } from "@shared/EventBus";
+import { MAX_TERRAIN_HEIGHT } from "@shared/constants";
 
 async function main(): Promise<void> {
   const canvas  = document.getElementById("game-canvas") as HTMLCanvasElement;
@@ -62,6 +65,18 @@ async function main(): Promise<void> {
 
   // ── UI ────────────────────────────────────────────────────────────────────
   new HudController(hudRoot);
+
+  new Minimap(
+    hudRoot,
+    (x, z) => terrain.sampleHeight(x, z),
+    () => { const p = player.getPosition(); return { x: p.x, y: p.y, z: p.z }; },
+    () => player.getFacingAngle(),
+    MAX_TERRAIN_HEIGHT
+  );
+
+  // Pause menu gates the simulation; rendering continues so the frozen frame stays visible
+  let paused = false;
+  new PauseMenu(hudRoot, (p) => { paused = p; });
 
   // Dead Eye canvas filter for sepia slow-motion feel
   bus.on("deadeye:activated",   () => { canvas.style.filter = "sepia(0.45) contrast(1.15)"; });
@@ -138,6 +153,13 @@ async function main(): Promise<void> {
     const now      = performance.now();
     const rawDelta = (now - lastTime) / 1000;
     lastTime = now;
+
+    // Paused: keep presenting the last frame but advance no simulation
+    if (paused) {
+      scene.render();
+      return;
+    }
+
     const delta     = Math.min(rawDelta, 0.05);
     const gameDelta = delta * (deadEye.isActive() ? 0.2 : 1.0);
 
