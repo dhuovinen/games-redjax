@@ -54,6 +54,7 @@ export class PauseMenu {
         ${row("Q", "Dead Eye")}
         ${row("Left Click", "Shoot / Lock target")}
         ${row("R", "Rest at campfire")}
+        ${row("F", "Talk to traveler")}
         ${row("M", "Mute audio")}
         ${row("Esc", "Pause / Resume")}
       </div>

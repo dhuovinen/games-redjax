@@ -28,7 +28,7 @@ export class NpcController {
 
   private isAlive = true;
   private facingAngle = 0;
-  private threatIndicator: Mesh | null = null;
+  private marker: Mesh | null = null;
   private attackTimer = NPC_ATTACK_INTERVAL;
   private attackPulse = 0; // brief telegraph after a strike
 
@@ -51,20 +51,27 @@ export class NpcController {
     this.visual = new PlayerVisual(scene, id, colors, { npcId: id, role });
     this.visual.sync(spawnPosition.x, spawnPosition.y, spawnPosition.z, 0);
 
-    if (role === "bandit") {
-      this.threatIndicator = MeshBuilder.CreateBox(`threat_${id}`, { width: 0.20, height: 0.20, depth: 0.20 }, scene);
-      const threatMat = new StandardMaterial(`threatMat_${id}`, scene);
-      threatMat.emissiveColor = new Color3(0.95, 0.10, 0.10);
-      threatMat.disableLighting = true;
-      this.threatIndicator.material = threatMat;
-      this.threatIndicator.isPickable = false;
-      this.threatIndicator.position.set(spawnPosition.x, spawnPosition.y + 2.4, spawnPosition.z);
-    }
+    // Floating marker: red for hostile bandits, gold for interactable travelers
+    this.marker = MeshBuilder.CreateBox(`marker_${id}`, { width: 0.20, height: 0.20, depth: 0.20 }, scene);
+    const markerMat = new StandardMaterial(`markerMat_${id}`, scene);
+    markerMat.emissiveColor = role === "bandit"
+      ? new Color3(0.95, 0.10, 0.10)
+      : new Color3(0.95, 0.78, 0.20);
+    markerMat.disableLighting = true;
+    this.marker.material = markerMat;
+    this.marker.isPickable = false;
+    this.marker.rotation.x = Math.PI / 4; // diamond orientation
+    this.marker.position.set(spawnPosition.x, spawnPosition.y + 2.4, spawnPosition.z);
   }
 
   update(deltaSeconds: number, playerPosition: Vector3, terrainSampleHeight: (x: number, z: number) => number): void {
     if (!this.isAlive) return;
-    if (this.role !== "bandit") return; // only bandits chase
+
+    // Travelers are stationary — just bob their marker and wait for the player
+    if (this.role !== "bandit") {
+      if (this.marker) this.marker.rotation.y += 1.2 * deltaSeconds;
+      return;
+    }
 
     const dist = Vector3.Distance(playerPosition, this.mesh.position);
 
@@ -94,12 +101,12 @@ export class NpcController {
     this.mesh.position.y = groundY + 0.05;
     this.visual.sync(this.mesh.position.x, groundY, this.mesh.position.z, this.facingAngle);
 
-    if (this.threatIndicator) {
-      this.threatIndicator.position.set(this.mesh.position.x, groundY + 2.5, this.mesh.position.z);
-      this.threatIndicator.rotation.y += 1.5 * deltaSeconds;
+    if (this.marker) {
+      this.marker.position.set(this.mesh.position.x, groundY + 2.5, this.mesh.position.z);
+      this.marker.rotation.y += 1.5 * deltaSeconds;
       // Pulse larger right after a strike as a visible attack tell
       const s = this.attackPulse > 0 ? 1.8 : 1.0;
-      this.threatIndicator.scaling.set(s, s, s);
+      this.marker.scaling.set(s, s, s);
     }
 
     this.visual.animate(isMoving, 0.5, deltaSeconds);
@@ -109,7 +116,7 @@ export class NpcController {
     if (!this.isAlive) return;
     this.isAlive = false;
     this.visual.setVisible(false);
-    if (this.threatIndicator) this.threatIndicator.isVisible = false;
+    if (this.marker) this.marker.isVisible = false;
     bus.emit("combat:npcKilled", { npcId: this.id, isInnocent: this.isInnocent });
   }
 
@@ -120,6 +127,6 @@ export class NpcController {
   dispose(): void {
     this.visual.dispose();
     this.mesh.dispose();
-    this.threatIndicator?.dispose();
+    this.marker?.dispose();
   }
 }

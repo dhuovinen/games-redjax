@@ -3,6 +3,7 @@ import {
   HONOR_KILL_INNOCENT,
   HONOR_KILL_BANDIT,
   HONOR_HELP_TRAVELER,
+  HONOR_ROB_TRAVELER,
   HONOR_TIER_THRESHOLDS,
 } from "@shared/constants";
 import type { HonorTier } from "@shared/types";
@@ -18,6 +19,10 @@ export class HonorSystem {
 
   helpTraveler(): void {
     this.adjust(HONOR_HELP_TRAVELER);
+  }
+
+  robTraveler(): void {
+    this.adjust(HONOR_ROB_TRAVELER);
   }
 
   private adjust(delta: number): void {

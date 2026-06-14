@@ -26,6 +26,7 @@ import { HudController }     from "@ui/hud/HudController";
 import { Minimap }           from "@ui/hud/Minimap";
 import { PauseMenu }         from "@ui/menus/PauseMenu";
 import { RestMenu }          from "@ui/menus/RestMenu";
+import { TravelerDialog }    from "@ui/menus/TravelerDialog";
 
 // Audio
 import { AudioManager }      from "./audio/AudioManager";
@@ -86,13 +87,28 @@ async function main(): Promise<void> {
 
   // Pause menu + rest menu both gate the simulation; rendering continues so
   // the frozen frame stays visible.
-  let pauseOpen = false;
-  let restOpen  = false;
+  let pauseOpen  = false;
+  let restOpen   = false;
+  let dialogOpen = false;
   new PauseMenu(hudRoot, (p) => { pauseOpen = p; });
   const restMenu = new RestMenu(
     hudRoot,
     (hour) => { dayNight.setTime(hour); player.restoreFullHealth(); },
     (open) => { restOpen = open; }
+  );
+  const travelerDialog = new TravelerDialog(
+    hudRoot,
+    (choice, encId) => {
+      if (choice === "help") honorSys.helpTraveler();
+      else if (choice === "rob") honorSys.robTraveler();
+      if (choice !== "leave") {
+        encounterMgr.resolve(encId);
+        const npcs = activeNpcs.get(encId);
+        activeNpcs.delete(encId);
+        setTimeout(() => npcs?.forEach((n) => n.dispose()), 1200);
+      }
+    },
+    (open) => { dialogOpen = open; }
   );
 
   // Procedural audio (wind, gunshots, melee thuds, hoofbeats). M toggles mute.
@@ -122,16 +138,8 @@ async function main(): Promise<void> {
     }
 
     activeNpcs.set(id, npcs);
-
-    // Auto-resolve traveler encounter after 8 seconds
-    if (type === "injured_traveler") {
-      setTimeout(() => {
-        encounterMgr.resolve(id);
-        honorSys.helpTraveler();
-        activeNpcs.get(id)?.forEach((n) => n.dispose());
-        activeNpcs.delete(id);
-      }, 8000);
-    }
+    // Traveler encounters now wait for the player to walk up and choose
+    // (see the TravelerDialog wiring below).
   });
 
   // ── Dead Eye execution ────────────────────────────────────────────────────
@@ -202,8 +210,8 @@ async function main(): Promise<void> {
     const rawDelta = (now - lastTime) / 1000;
     lastTime = now;
 
-    // Paused (pause menu or rest panel open): present the last frame, no sim
-    if (pauseOpen || restOpen) {
+    // Paused (a menu/dialog is open): present the last frame, advance no sim
+    if (pauseOpen || restOpen || dialogOpen) {
       scene.render();
       return;
     }
@@ -236,6 +244,19 @@ async function main(): Promise<void> {
 
     // Hoofbeats while riding
     audio.update(player.isMountedOnHorse() && horse.isMovingNow(), horse.isGallopingNow());
+
+    // Traveler dialogue proximity (on foot only): nearest interactable traveler
+    let nearTraveler: string | null = null;
+    if (!player.isMountedOnHorse()) {
+      for (const [encId, npcs] of activeNpcs) {
+        if (npcs[0].isInnocent && npcs[0].getIsAlive() &&
+            Vector3.Distance(playerPos, npcs[0].mesh.position) < 4) {
+          nearTraveler = encId;
+          break;
+        }
+      }
+    }
+    travelerDialog.setNearby(nearTraveler);
 
     // NPC AI
     activeNpcs.forEach((npcs) => {

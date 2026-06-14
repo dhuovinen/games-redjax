@@ -45,7 +45,7 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Camp/fire rest mechanic (time skip + health regen)
 - [x] Complete bandit encounter arc (chase → attack → clear → death/respawn)
 - [x] Procedural audio (wind, gunshots, melee thuds, hoofbeats — Web Audio)
-- [ ] Encounter: injured traveler dialogue pop-up
+- [x] Encounter: injured traveler dialogue (help / rob / leave → honor)
 - [ ] Settings (volume, sensitivity)
 - [ ] Performance pass — profile and tune LOD distances
 

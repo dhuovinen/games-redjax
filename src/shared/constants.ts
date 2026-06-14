@@ -25,6 +25,7 @@ export const DEADEYE_MAX_TARGETS = 4;
 export const HONOR_KILL_INNOCENT = -0.15;
 export const HONOR_KILL_BANDIT = 0.05;
 export const HONOR_HELP_TRAVELER = 0.1;
+export const HONOR_ROB_TRAVELER = -0.12;
 export const HONOR_TIER_THRESHOLDS: Record<string, number> = {
   outlaw: -0.8,
   dishonorable: -0.4,
