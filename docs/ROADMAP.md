@@ -48,6 +48,7 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Encounter: injured traveler dialogue (help / rob / leave → honor)
 - [x] Settings (volume + look sensitivity, persisted to localStorage)
 - [x] Performance pass — DPI cap, frozen static meshes/materials, picking opt
+- [x] Weather made visible — rain, weather fog, storm lightning + thunder
 
 ## Deferred (Post-Slice)
 

@@ -261,7 +261,7 @@ async function main(): Promise<void> {
     terrain.update(playerPos);
     vegetation.update(playerPos);
     sky.update(delta);
-    weatherCtrl.update(playerPos);
+    weatherCtrl.update(playerPos, delta); // runs after sky → owns final fog
 
     // Entities
     player.update(gameDelta);

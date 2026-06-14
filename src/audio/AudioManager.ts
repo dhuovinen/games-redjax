@@ -33,6 +33,7 @@ export class AudioManager {
 
     bus.on("weapon:fired", () => this.gunshot());
     bus.on("npc:attackedPlayer", () => this.impact());
+    bus.on("weather:lightning", () => this.thunder());
     bus.on("deadeye:activated",   () => this.duckWind(true));
     bus.on("deadeye:deactivated", () => this.duckWind(false));
   }
@@ -142,6 +143,32 @@ export class AudioManager {
     osc.connect(gain).connect(this.master);
     osc.start(t);
     osc.stop(t + 0.18);
+  }
+
+  private thunder(): void {
+    const ctx = this.ctx;
+    if (!ctx) return;
+    // Sound lags the flash — start the rumble a beat later, as if distant
+    const t = ctx.currentTime + 0.3 + Math.random() * 0.9;
+
+    const src = ctx.createBufferSource();
+    src.buffer = this.noiseBuffer;
+    src.loop = true;
+
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(420, t);
+    lp.frequency.exponentialRampToValueAtTime(90, t + 1.4);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.5, t + 0.08); // initial crack
+    gain.gain.exponentialRampToValueAtTime(0.18, t + 0.5); // rolling body
+    gain.gain.exponentialRampToValueAtTime(0.0006, t + 1.7); // fade out
+
+    src.connect(lp).connect(gain).connect(this.master);
+    src.start(t);
+    src.stop(t + 1.8);
   }
 
   private hoofbeat(t: number, galloping: boolean): void {

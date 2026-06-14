@@ -7,6 +7,7 @@ export interface GameEvents {
   "time:hourChanged": { hour: number };
   // Weather
   "weather:changed": { state: WeatherState };
+  "weather:lightning": void;
   // Player
   "player:moved": { position: Vec3 };
   "player:mounted": void;

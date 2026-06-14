@@ -76,6 +76,7 @@ main          → EventBus["weapon:fired"]      → AudioManager (gunshot synth)
 | `src/world/environment/SkyController.ts` | SkyMaterial scattering, sun/moon, PCF shadows, fog |
 | `src/world/environment/PostProcessController.ts` | Bloom, ACES, vignette, grain, SSAO, MSAA |
 | `src/world/environment/VegetationManager.ts` | Streamed cacti/trees/rocks/shrubs |
+| `src/world/environment/WeatherController.ts` | Rain particles, weather fog, storm lightning |
 | `src/entities/player/PlayerController.ts` | WASD movement, third-person camera, look sensitivity |
 | `src/entities/horse/HorseController.ts` | Mount/dismount, gallop, following AI |
 | `src/entities/npc/NpcController.ts` | Bandit chase/attack AI, traveler markers |
@@ -100,3 +101,12 @@ main          → EventBus["weapon:fired"]      → AudioManager (gunshot synth)
 - Static terrain + vegetation: `freezeWorldMatrix()` and frozen materials
 - `scene.blockMaterialDirtyMechanism` enabled after initial world load
 - Babylon core ships as one cacheable vendor chunk (see ADR-007)
+
+### Scene constraints to watch
+
+- **Fog has one owner per frame:** `SkyController` writes a time-of-day base,
+  then `WeatherController` (later in the loop) combines weather on top and is
+  the final writer. Do not set `scene.fog*` from anywhere else.
+- **Light budget:** 4 active lights (sun, ambient, campfire, lightning) ==
+  `StandardMaterial` default `maxSimultaneousLights`. A 5th light requires
+  raising `maxSimultaneousLights` on affected materials or it is dropped.

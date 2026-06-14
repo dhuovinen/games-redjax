@@ -172,3 +172,36 @@ locally with `npm run test:run` before pushing.
 **Revisit when:** a second contributor joins, PRs become the norm, or a
 test-passing regression reaches production. At that point add a GitHub Actions
 workflow (`npm ci && npm run test:run && npm run build`) gating `main`.
+
+---
+
+## ADR-010 — Weather rendering: single fog owner + procedural rain
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** `WeatherController` existed but was effectively broken: (1)
+`SkyController` rewrote `scene.fog*` every frame, clobbering the weather fog
+set only on state-change events; (2) rain loaded a cross-origin texture from
+`assets.babylonjs.com`, which breaks the project's zero-asset/offline property
+and is liable to be blocked by our own `Cross-Origin-Embedder-Policy:
+require-corp` header (ADR for Havok headers) on the deployed site.
+
+**Decision:**
+- **Single fog owner per frame.** Sky writes a time-of-day base; weather runs
+  later in the loop and combines on top (additive density, colour blend),
+  becoming the sole final writer of `scene.fog*`.
+- **Procedural raindrop** via a `DynamicTexture` radial gradient — no network,
+  COEP-safe.
+- **Storm lightning** via a dedicated scene `HemisphericLight` flashed on a
+  random timer, emitting `weather:lightning` so `AudioManager` answers with a
+  delayed thunder rumble (sound lags light).
+
+**Consequences:**
+- Weather is now visible, self-contained, and works offline / under COEP
+- Adds a 4th scene light — exactly the `StandardMaterial` default ceiling;
+  documented in ARCHITECTURE as a constraint to watch
+- Fog is additive, so storms thicken the existing time-of-day haze rather than
+  replacing it — coupling weather and sky intentionally, in one direction only
+- `WeatherController` is world-layer and remains unit-untested (needs WebGL);
+  the underlying `WeatherSystem` state machine stays covered by Vitest
