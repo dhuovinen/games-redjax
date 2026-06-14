@@ -8,7 +8,9 @@ import {
 } from "@babylonjs/core";
 import { bus } from "@shared/EventBus";
 import { PlayerVisual, BANDIT_COLORS, TRAVELER_COLORS } from "@entities/player/PlayerVisual";
+import { NPC_COLLISION_RADIUS } from "@shared/constants";
 import type { Vec3 } from "@shared/types";
+import type { CollisionSystem } from "@core/physics/CollisionSystem";
 
 export type NpcRole = "bandit" | "traveler";
 
@@ -36,7 +38,8 @@ export class NpcController {
     scene: Scene,
     id: string,
     private role: NpcRole,
-    spawnPosition: Vec3
+    spawnPosition: Vec3,
+    private collision: CollisionSystem
   ) {
     this.id = id;
     this.isInnocent = role === "traveler";
@@ -62,6 +65,10 @@ export class NpcController {
     this.marker.isPickable = false;
     this.marker.rotation.x = Math.PI / 4; // diamond orientation
     this.marker.position.set(spawnPosition.x, spawnPosition.y + 2.4, spawnPosition.z);
+
+    // Register as a collider so the player, horse, and other NPCs avoid it.
+    // Bandits refresh this each frame as they move; travelers are stationary.
+    this.collision.setDynamic(this.id, spawnPosition.x, spawnPosition.z, NPC_COLLISION_RADIUS);
   }
 
   update(deltaSeconds: number, playerPosition: Vector3, terrainSampleHeight: (x: number, z: number) => number): void {
@@ -83,7 +90,15 @@ export class NpcController {
       dir.normalize();
       this.facingAngle = Math.atan2(dir.x, dir.z);
       if (dist > NPC_STOP_RANGE) {
-        this.mesh.position.addInPlace(dir.scale(NPC_CHASE_SPEED * deltaSeconds));
+        const step = dir.scale(NPC_CHASE_SPEED * deltaSeconds);
+        const fromX = this.mesh.position.x;
+        const fromZ = this.mesh.position.z;
+        const resolved = this.collision.resolve(
+          fromX, fromZ, fromX + step.x, fromZ + step.z,
+          NPC_COLLISION_RADIUS, this.id
+        );
+        this.mesh.position.x = resolved.x;
+        this.mesh.position.z = resolved.z;
         isMoving = true;
       }
     }
@@ -110,6 +125,9 @@ export class NpcController {
     }
 
     this.visual.animate(isMoving, 0.5, deltaSeconds);
+
+    // Refresh our collider to the new position
+    this.collision.setDynamic(this.id, this.mesh.position.x, this.mesh.position.z, NPC_COLLISION_RADIUS);
   }
 
   kill(): void {
@@ -117,6 +135,7 @@ export class NpcController {
     this.isAlive = false;
     this.visual.setVisible(false);
     if (this.marker) this.marker.isVisible = false;
+    this.collision.removeDynamic(this.id); // corpse no longer blocks
     bus.emit("combat:npcKilled", { npcId: this.id, isInnocent: this.isInnocent });
   }
 
@@ -125,6 +144,7 @@ export class NpcController {
   }
 
   dispose(): void {
+    this.collision.removeDynamic(this.id);
     this.visual.dispose();
     this.mesh.dispose();
     this.marker?.dispose();

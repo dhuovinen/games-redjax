@@ -234,3 +234,10 @@ resolved each frame. NPCs are intentionally left non-colliding for now.
   stacking) is actually needed; this does not preclude it.
 - **Known gap:** NPCs ignore obstacles and can clip vegetation — acceptable for
   the slice; revisit if NPC pathing becomes prominent.
+
+**Update (2026-06-14):** the NPC gap above is now closed. NPCs register as
+dynamic colliders (radius `NPC_COLLISION_RADIUS`) and resolve their own chase
+movement against the world, so the player/horse/other NPCs avoid them and they
+no longer clip vegetation. Colliders are removed on death and dispose. NPC↔NPC
+and NPC↔world use the same single-pass depenetration, so the approximation
+caveats above still apply.

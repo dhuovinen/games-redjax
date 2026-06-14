@@ -20,6 +20,7 @@ export const HORSE_MOUNT_DISTANCE = 3; // meters
 // Collision — agents are circles in the XZ plane
 export const PLAYER_COLLISION_RADIUS = 0.45;
 export const HORSE_COLLISION_RADIUS = 0.9;
+export const NPC_COLLISION_RADIUS = 0.4;
 export const CAMPFIRE_COLLISION_RADIUS = 0.85;
 
 // Dead Eye

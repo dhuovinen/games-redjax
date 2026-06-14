@@ -162,12 +162,12 @@ async function main(): Promise<void> {
     if (type === "bandit_ambush") {
       for (let i = 0; i < 3; i++) {
         const offset = { x: position.x + (i - 1) * 3, y: 0, z: position.z + 4 };
-        const npc = new NpcController(scene, `${id}_b${i}`, "bandit", offset);
+        const npc = new NpcController(scene, `${id}_b${i}`, "bandit", offset, collision);
         npc.visual.getMeshes().forEach((m) => sg.addShadowCaster(m));
         npcs.push(npc);
       }
     } else {
-      const npc = new NpcController(scene, `${id}_t0`, "traveler", position);
+      const npc = new NpcController(scene, `${id}_t0`, "traveler", position, collision);
       npc.visual.getMeshes().forEach((m) => sg.addShadowCaster(m));
       npcs.push(npc);
     }

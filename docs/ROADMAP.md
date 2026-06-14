@@ -49,7 +49,7 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Settings (volume + look sensitivity, persisted to localStorage)
 - [x] Performance pass — DPI cap, frozen static meshes/materials, picking opt
 - [x] Weather made visible — rain, weather fog, storm lightning + thunder
-- [x] Collision — player/horse vs vegetation, rocks, campfire (custom 2D circles)
+- [x] Collision — player/horse/NPCs vs vegetation, rocks, campfire (custom 2D circles)
 
 ## Deferred (Post-Slice)
 
