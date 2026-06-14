@@ -54,6 +54,7 @@ export class VegetationManager {
       m.emissiveColor = c.scale(emissive);
       m.specularColor = new Color3(0.04, 0.04, 0.04);
       m.specularPower = 6;
+      m.freeze(); // static material
       return m;
     };
 
@@ -164,6 +165,10 @@ export class VegetationManager {
       const gy = this.terrain.sampleHeight(wx, wz);
       this.placeShrub(node, wx, gy, wz, r);
     }
+
+    // All vegetation is static — freeze world matrices so they're skipped by
+    // the per-frame transform update.
+    node.getChildMeshes().forEach((m) => m.freezeWorldMatrix());
   }
 
   private placeCactus(parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {

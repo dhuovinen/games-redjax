@@ -40,8 +40,15 @@ async function main(): Promise<void> {
   const hudRoot = document.getElementById("hud") as HTMLElement;
 
   const engine = new Engine(canvas, true, { adaptToDeviceRatio: true, antialias: true });
+  // Cap render resolution on high-DPI displays — rendering at native 3-4x
+  // retina is the biggest needless GPU cost; 1.5x looks crisp for far less.
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  engine.setHardwareScalingLevel(1 / dpr);
+
   const scene  = new Scene(engine);
   scene.collisionsEnabled = true;
+  // We only pick on explicit clicks (shooting), never on pointer move.
+  scene.skipPointerMovePicking = true;
 
   // ── Core systems ──────────────────────────────────────────────────────────
   const dayNight    = new DayNightCycle();
@@ -85,12 +92,35 @@ async function main(): Promise<void> {
     MAX_TERRAIN_HEIGHT
   );
 
-  // Pause menu + rest menu both gate the simulation; rendering continues so
-  // the frozen frame stays visible.
+  // Procedural audio (wind, gunshots, melee thuds, hoofbeats). M toggles mute.
+  const audio = new AudioManager();
+
+  // Persisted settings (volume + look sensitivity)
+  const readSetting = (key: string, fallback: number): number => {
+    const raw = localStorage.getItem(key);
+    const n = raw === null ? NaN : Number(raw);
+    return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback;
+  };
+  const initialVolume      = readSetting("redjax.volume", 0.8);
+  const initialSensitivity = readSetting("redjax.sensitivity", 0.5);
+  audio.setVolume(initialVolume);
+  player.setLookSensitivity(initialSensitivity);
+
+  // Pause menu + rest menu + dialog all gate the simulation; rendering
+  // continues so the frozen frame stays visible.
   let pauseOpen  = false;
   let restOpen   = false;
   let dialogOpen = false;
-  new PauseMenu(hudRoot, (p) => { pauseOpen = p; });
+  new PauseMenu(
+    hudRoot,
+    (p) => { pauseOpen = p; },
+    {
+      initialVolume,
+      initialSensitivity,
+      onVolume: (v) => { audio.setVolume(v); localStorage.setItem("redjax.volume", String(v)); },
+      onSensitivity: (v) => { player.setLookSensitivity(v); localStorage.setItem("redjax.sensitivity", String(v)); },
+    }
+  );
   const restMenu = new RestMenu(
     hudRoot,
     (hour) => { dayNight.setTime(hour); player.restoreFullHealth(); },
@@ -110,9 +140,6 @@ async function main(): Promise<void> {
     },
     (open) => { dialogOpen = open; }
   );
-
-  // Procedural audio (wind, gunshots, melee thuds, hoofbeats). M toggles mute.
-  const audio = new AudioManager();
 
   // Dead Eye canvas filter for sepia slow-motion feel
   bus.on("deadeye:activated",   () => { canvas.style.filter = "sepia(0.45) contrast(1.15)"; });
@@ -201,6 +228,10 @@ async function main(): Promise<void> {
   const startPos = player.getPosition();
   terrain.update(startPos);
   vegetation.update(startPos);
+
+  // Materials are fully configured by now; stop Babylon from scanning them for
+  // dirty flags every frame. (We only ever mutate color values, not flags.)
+  scene.blockMaterialDirtyMechanism = true;
 
   // ── Render loop ───────────────────────────────────────────────────────────
   let lastTime = performance.now();

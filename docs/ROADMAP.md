@@ -46,8 +46,8 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Complete bandit encounter arc (chase → attack → clear → death/respawn)
 - [x] Procedural audio (wind, gunshots, melee thuds, hoofbeats — Web Audio)
 - [x] Encounter: injured traveler dialogue (help / rob / leave → honor)
-- [ ] Settings (volume, sensitivity)
-- [ ] Performance pass — profile and tune LOD distances
+- [x] Settings (volume + look sensitivity, persisted to localStorage)
+- [x] Performance pass — DPI cap, frozen static meshes/materials, picking opt
 
 ## Deferred (Post-Slice)
 

@@ -167,6 +167,15 @@ export class AudioManager {
     this.windFilter.frequency.linearRampToValueAtTime(active ? 160 : 480, t + 0.3);
   }
 
+  /** Set master volume 0..1 (also lifts mute). */
+  setVolume(level: number): void {
+    this.masterLevel = Math.max(0, Math.min(1, level));
+    this.muted = false;
+    if (this.ctx) {
+      this.master.gain.linearRampToValueAtTime(this.masterLevel, this.ctx.currentTime + 0.05);
+    }
+  }
+
   toggleMute(): void {
     this.muted = !this.muted;
     if (this.ctx) {

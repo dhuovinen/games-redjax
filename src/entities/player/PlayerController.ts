@@ -192,4 +192,12 @@ export class PlayerController {
   getCamera(): ArcRotateCamera {
     return this.camera;
   }
+
+  /** Look sensitivity 0..1 → camera angular sensibility (lower = faster look). */
+  setLookSensitivity(value: number): void {
+    const v = Math.max(0, Math.min(1, value));
+    const sensibility = 4500 - v * 3500; // 4500 (slow) … 1000 (fast)
+    this.camera.angularSensibilityX = sensibility;
+    this.camera.angularSensibilityY = sensibility;
+  }
 }

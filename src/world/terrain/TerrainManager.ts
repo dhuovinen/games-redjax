@@ -52,6 +52,7 @@ export class TerrainManager {
     m.emissiveColor = new Color3(0.05, 0.045, 0.035); // reads in shadow, not pitch-black
     m.specularColor = new Color3(0.02, 0.02, 0.02);
     m.specularPower = 4;
+    m.freeze(); // static material — skip per-frame recompilation checks
     return m;
   }
 
@@ -122,6 +123,7 @@ export class TerrainManager {
 
     this.applyProceduralHeight(mesh, worldX, worldZ);
     mesh.material = this.material;
+    mesh.freezeWorldMatrix(); // chunk never moves once placed
 
     chunk.mesh = mesh;
     chunk.loaded = true;
