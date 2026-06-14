@@ -3,6 +3,8 @@ import {
   MeshBuilder,
   StandardMaterial,
   Color3,
+  Color4,
+  VertexBuffer,
   Mesh,
 } from "@babylonjs/core";
 import {
@@ -20,14 +22,20 @@ interface Chunk {
   loaded: boolean;
 }
 
+// Terrain zone colors blended per-vertex by height & slope
+const SAND = new Color3(0.60, 0.48, 0.30); // warm dusty lowland sand
+const CLAY = new Color3(0.54, 0.33, 0.18); // reddish midland clay
+const ROCK = new Color3(0.46, 0.41, 0.34); // grey-brown highland rock
+const SLOPE_ROCK = new Color3(0.38, 0.34, 0.30); // exposed cliff rock on steep faces
+
 export class TerrainManager {
   private chunks: Chunk[][] = [];
-  private materials: StandardMaterial[];
+  private material: StandardMaterial;
 
   private readonly LOAD_RADIUS = 3;
 
   constructor(private scene: Scene) {
-    this.materials = this.buildMaterials();
+    this.material = this.buildMaterial();
 
     for (let row = 0; row < CHUNK_COUNT; row++) {
       this.chunks[row] = [];
@@ -37,22 +45,47 @@ export class TerrainManager {
     }
   }
 
-  // Three terrain zones for visual variety
-  private buildMaterials(): StandardMaterial[] {
-    const make = (name: string, r: number, g: number, b: number) => {
-      const m = new StandardMaterial(name, this.scene);
-      const c = new Color3(r, g, b);
-      m.diffuseColor  = c;
-      m.emissiveColor = c.scale(0.14); // ground reads in shadow, not pitch-black
-      m.specularColor = new Color3(0.03, 0.03, 0.03);
-      m.specularPower = 4;
-      return m;
-    };
-    return [
-      make("t_lowland",  0.58, 0.46, 0.28),  // warm dusty sand
-      make("t_midland",  0.52, 0.32, 0.18),  // reddish clay
-      make("t_highland", 0.46, 0.40, 0.32),  // rocky grey-brown
-    ];
+  // Single material — surface variety comes from per-vertex colors
+  private buildMaterial(): StandardMaterial {
+    const m = new StandardMaterial("terrain", this.scene);
+    m.diffuseColor  = new Color3(1, 1, 1); // multiplied by vertex color
+    m.emissiveColor = new Color3(0.05, 0.045, 0.035); // reads in shadow, not pitch-black
+    m.specularColor = new Color3(0.02, 0.02, 0.02);
+    m.specularPower = 4;
+    return m;
+  }
+
+  /** Per-vertex terrain color: zone by height, rock on steep slopes, plus noise. */
+  private vertexColor(height: number, slope: number, wx: number, wz: number): Color4 {
+    const hN = Math.min(1, Math.max(0, height / MAX_TERRAIN_HEIGHT));
+
+    // Height zones: sand → clay → rock
+    let c: Color3;
+    if (hN < 0.30) {
+      c = Color3.Lerp(SAND, CLAY, hN / 0.30);
+    } else if (hN < 0.60) {
+      c = Color3.Lerp(CLAY, ROCK, (hN - 0.30) / 0.30);
+    } else {
+      c = ROCK;
+    }
+
+    // Steep faces expose darker rock regardless of height
+    const steep = Math.min(1, Math.max(0, (slope - 0.35) / 0.45));
+    c = Color3.Lerp(c, SLOPE_ROCK, steep);
+
+    // Deterministic hash noise breaks up flat banding (±6%)
+    const n = this.hashNoise(wx, wz) * 0.12 - 0.06;
+    return new Color4(
+      Math.min(1, c.r + n),
+      Math.min(1, c.g + n),
+      Math.min(1, c.b + n),
+      1
+    );
+  }
+
+  private hashNoise(x: number, z: number): number {
+    const s = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+    return s - Math.floor(s);
   }
 
   update(playerPosition: { x: number; y: number; z: number }): void {
@@ -88,17 +121,7 @@ export class TerrainManager {
     mesh.isPickable = false;
 
     this.applyProceduralHeight(mesh, worldX, worldZ);
-
-    // Pick material based on average height of chunk center
-    const centerH = this.sampleHeight(worldX, worldZ);
-    const threshold = MAX_TERRAIN_HEIGHT;
-    if (centerH > threshold * 0.55) {
-      mesh.material = this.materials[2]; // highland rocky
-    } else if (centerH > threshold * 0.25) {
-      mesh.material = this.materials[1]; // midland clay
-    } else {
-      mesh.material = this.materials[0]; // lowland sand
-    }
+    mesh.material = this.material;
 
     chunk.mesh = mesh;
     chunk.loaded = true;
@@ -122,6 +145,24 @@ export class TerrainManager {
 
     mesh.updateVerticesData("position", positions);
     mesh.createNormals(true);
+
+    // Per-vertex colors using freshly-computed normals for slope
+    const normals = mesh.getVerticesData("normal");
+    if (normals) {
+      const colors = new Array<number>((positions.length / 3) * 4);
+      for (let i = 0, c = 0; i < positions.length; i += 3, c += 4) {
+        const wx = positions[i]     + originX;
+        const wz = positions[i + 2] + originZ;
+        const slope = 1 - normals[i + 1]; // normal.y: 1 flat, 0 vertical
+        const col = this.vertexColor(positions[i + 1], slope, wx, wz);
+        colors[c]     = col.r;
+        colors[c + 1] = col.g;
+        colors[c + 2] = col.b;
+        colors[c + 3] = col.a;
+      }
+      mesh.setVerticesData(VertexBuffer.ColorKind, colors);
+      mesh.hasVertexAlpha = false;
+    }
   }
 
   /**
@@ -145,6 +186,6 @@ export class TerrainManager {
     for (const row of this.chunks) {
       for (const chunk of row) this.unloadChunk(chunk);
     }
-    this.materials.forEach((m) => m.dispose());
+    this.material.dispose();
   }
 }

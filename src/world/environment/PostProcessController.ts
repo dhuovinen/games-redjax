@@ -1,16 +1,29 @@
 import {
   Scene,
   DefaultRenderingPipeline,
+  SSAO2RenderingPipeline,
   ArcRotateCamera,
   ImageProcessingConfiguration,
 } from "@babylonjs/core";
 
 export class PostProcessController {
   private pipeline: DefaultRenderingPipeline;
+  private ssao: SSAO2RenderingPipeline;
 
   constructor(scene: Scene, camera: ArcRotateCamera) {
+    // ── Screen-space ambient occlusion — grounds objects with contact shadowing
+    this.ssao = new SSAO2RenderingPipeline("ssao", scene, 0.75, [camera]);
+    this.ssao.totalStrength = 1.1;
+    this.ssao.base = 0.08;
+    this.ssao.radius = 1.8;
+    this.ssao.samples = 16;
+    this.ssao.maxZ = 250;
+    this.ssao.minZAspect = 0.2;
+
     this.pipeline = new DefaultRenderingPipeline("main", true, scene, [camera]);
 
+    // 4x MSAA — clean polygon edges in addition to FXAA
+    this.pipeline.samples = 4;
     this.pipeline.fxaaEnabled = true;
 
     this.pipeline.bloomEnabled = true;
@@ -41,5 +54,6 @@ export class PostProcessController {
 
   dispose(): void {
     this.pipeline.dispose();
+    this.ssao.dispose();
   }
 }

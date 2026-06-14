@@ -40,10 +40,13 @@ export class SkyController {
     this.sun.intensity = 1.2;
     this.sun.position.set(50, 80, 50);
 
-    // 2048 shadow map — sharper shadows
+    // 2048 shadow map with high-quality PCF — soft contact shadows
     this.shadowGen = new ShadowGenerator(2048, this.sun);
-    this.shadowGen.useBlurExponentialShadowMap = true;
-    this.shadowGen.blurKernel = 32;
+    this.shadowGen.usePercentageCloserFiltering = true;
+    this.shadowGen.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+    this.shadowGen.bias = 0.0009;
+    this.shadowGen.normalBias = 0.02;
+    this.shadowGen.setDarkness(0.32);
 
     this.ambient = new HemisphericLight("ambient", Vector3.Up(), scene);
     this.ambient.intensity = 0.38;
