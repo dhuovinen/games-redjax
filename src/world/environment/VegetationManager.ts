@@ -9,6 +9,7 @@ import {
 } from "@babylonjs/core";
 import { CHUNK_SIZE, CHUNK_COUNT, WORLD_SIZE_METERS } from "@shared/constants";
 import type { TerrainManager } from "@world/terrain/TerrainManager";
+import type { CollisionSystem } from "@core/physics/CollisionSystem";
 
 // Per-chunk vegetation state
 interface VegChunk {
@@ -16,6 +17,7 @@ interface VegChunk {
   row: number;
   node: TransformNode | null;
   loaded: boolean;
+  colliderIds: string[];
 }
 
 const LOAD_RADIUS = 3; // mirror TerrainManager
@@ -33,17 +35,28 @@ interface VegTemplates {
 export class VegetationManager {
   private chunks: VegChunk[][] = [];
   private templates: VegTemplates;
+  private colliderSeq = 0;
 
-  constructor(private scene: Scene, private terrain: TerrainManager) {
+  constructor(
+    private scene: Scene,
+    private terrain: TerrainManager,
+    private collision: CollisionSystem
+  ) {
     this.templates = this.buildTemplates();
 
     for (let row = 0; row < CHUNK_COUNT; row++) {
       this.chunks[row] = [];
       for (let col = 0; col < CHUNK_COUNT; col++) {
-        this.chunks[row][col] = { col, row, node: null, loaded: false };
+        this.chunks[row][col] = { col, row, node: null, loaded: false, colliderIds: [] };
       }
     }
+  }
 
+  /** Register a solid obstacle and remember its id for chunk unload. */
+  private addCollider(chunk: VegChunk, x: number, z: number, radius: number): void {
+    const id = `veg${this.colliderSeq++}`;
+    this.collision.addStatic(id, x, z, radius);
+    chunk.colliderIds.push(id);
   }
 
   private buildTemplates(): VegTemplates {
@@ -136,7 +149,7 @@ export class VegetationManager {
       const wx = originX + r() * CHUNK_SIZE;
       const wz = originZ + r() * CHUNK_SIZE;
       const gy = this.terrain.sampleHeight(wx, wz);
-      this.placeCactus(node, wx, gy, wz, r);
+      this.placeCactus(chunk, node, wx, gy, wz, r);
     }
 
     // Trees (2–5 per chunk) — sparse
@@ -145,7 +158,7 @@ export class VegetationManager {
       const wx = originX + r() * CHUNK_SIZE;
       const wz = originZ + r() * CHUNK_SIZE;
       const gy = this.terrain.sampleHeight(wx, wz);
-      this.placeTree(node, wx, gy, wz, r);
+      this.placeTree(chunk, node, wx, gy, wz, r);
     }
 
     // Rocks (6–10 per chunk)
@@ -154,7 +167,7 @@ export class VegetationManager {
       const wx = originX + r() * CHUNK_SIZE;
       const wz = originZ + r() * CHUNK_SIZE;
       const gy = this.terrain.sampleHeight(wx, wz);
-      this.placeRock(node, wx, gy, wz, r);
+      this.placeRock(chunk, node, wx, gy, wz, r);
     }
 
     // Shrubs (10–16 per chunk)
@@ -171,7 +184,7 @@ export class VegetationManager {
     node.getChildMeshes().forEach((m) => m.freezeWorldMatrix());
   }
 
-  private placeCactus(parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
+  private placeCactus(chunk: VegChunk, parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
     const scale = 0.7 + r() * 0.8;
     const rotY  = r() * Math.PI * 2;
 
@@ -181,6 +194,8 @@ export class VegetationManager {
     body.scaling.setAll(scale);
     body.rotation.y = rotY;
     body.isPickable = false;
+
+    this.addCollider(chunk, wx, wz, 0.30 * scale);
 
     // Arms (50% chance each side)
     if (r() > 0.5) {
@@ -199,7 +214,7 @@ export class VegetationManager {
     }
   }
 
-  private placeTree(parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
+  private placeTree(chunk: VegChunk, parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
     const scale = 0.8 + r() * 1.2;
     const rotY  = r() * Math.PI * 2;
 
@@ -210,6 +225,8 @@ export class VegetationManager {
     trunk.rotation.y = rotY;
     trunk.isPickable = false;
 
+    this.addCollider(chunk, wx, wz, 0.32 * scale);
+
     const foliage = this.templates.treeFoliage.createInstance(`tf_${wx.toFixed(0)}_${wz.toFixed(0)}`);
     foliage.parent = parent;
     foliage.position.set(wx, gy + (1.0 + 0.7) * scale, wz);
@@ -217,7 +234,7 @@ export class VegetationManager {
     foliage.isPickable = false;
   }
 
-  private placeRock(parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
+  private placeRock(chunk: VegChunk, parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
     const scaleX = 0.5 + r() * 1.2;
     const scaleY = 0.4 + r() * 0.6;
     const scaleZ = 0.5 + r() * 1.0;
@@ -228,6 +245,9 @@ export class VegetationManager {
     rock.scaling.set(scaleX, scaleY, scaleZ);
     rock.rotation.y = r() * Math.PI * 2;
     rock.isPickable = false;
+
+    // Rock half-extent in X/Z (template is 0.9 × 0.75) → approx circle radius
+    this.addCollider(chunk, wx, wz, 0.45 * Math.max(scaleX, scaleZ));
   }
 
   private placeShrub(parent: TransformNode, wx: number, gy: number, wz: number, r: () => number): void {
@@ -245,6 +265,8 @@ export class VegetationManager {
     chunk.node?.dispose();
     chunk.node = null;
     chunk.loaded = false;
+    for (const id of chunk.colliderIds) this.collision.removeStatic(id);
+    chunk.colliderIds = [];
   }
 
   /** Deterministic per-chunk PRNG based on chunk seed */

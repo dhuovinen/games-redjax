@@ -6,10 +6,11 @@ import {
   KeyboardEventTypes,
 } from "@babylonjs/core";
 import { HorseVisual } from "./HorseVisual";
-import { HORSE_MOUNT_DISTANCE } from "@shared/constants";
+import { HORSE_MOUNT_DISTANCE, HORSE_COLLISION_RADIUS } from "@shared/constants";
 import type { HorseBondingSystem } from "@core/horse/HorseBondingSystem";
 import type { TerrainManager } from "@world/terrain/TerrainManager";
 import type { PlayerController } from "@entities/player/PlayerController";
+import type { CollisionSystem } from "@core/physics/CollisionSystem";
 
 const HORSE_WALK_SPEED    = 7;
 const HORSE_GALLOP_SPEED  = 17;
@@ -30,7 +31,8 @@ export class HorseController {
     private scene: Scene,
     private bonding: HorseBondingSystem,
     private terrain: TerrainManager,
-    private player: PlayerController
+    private player: PlayerController,
+    private collision: CollisionSystem
   ) {
     this.mesh = MeshBuilder.CreateBox("horseRoot", { width: 0.1, height: 0.1, depth: 0.1 }, scene);
     this.mesh.isVisible = false;
@@ -132,7 +134,14 @@ export class HorseController {
 
     if (move.lengthSquared() > 0) {
       move.normalize().scaleInPlace(speed * deltaSeconds);
-      this.mesh.position.addInPlace(move);
+      const fromX = this.mesh.position.x;
+      const fromZ = this.mesh.position.z;
+      const resolved = this.collision.resolve(
+        fromX, fromZ, fromX + move.x, fromZ + move.z,
+        HORSE_COLLISION_RADIUS, "horse"
+      );
+      this.mesh.position.x = resolved.x;
+      this.mesh.position.z = resolved.z;
       this.mesh.rotation.y = Math.atan2(move.x, move.z);
     }
 
@@ -151,7 +160,15 @@ export class HorseController {
 
     if (dist > HORSE_FOLLOW_STOP) {
       const dir = playerPos.subtract(this.mesh.position).normalize();
-      this.mesh.position.addInPlace(dir.scale(HORSE_FOLLOW_SPEED * deltaSeconds));
+      const step = dir.scale(HORSE_FOLLOW_SPEED * deltaSeconds);
+      const fromX = this.mesh.position.x;
+      const fromZ = this.mesh.position.z;
+      const resolved = this.collision.resolve(
+        fromX, fromZ, fromX + step.x, fromZ + step.z,
+        HORSE_COLLISION_RADIUS, "horse"
+      );
+      this.mesh.position.x = resolved.x;
+      this.mesh.position.z = resolved.z;
       this.mesh.rotation.y = Math.atan2(dir.x, dir.z);
     }
   }

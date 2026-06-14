@@ -17,6 +17,11 @@ export const PLAYER_SPRINT_SPEED = 9; // m/s sprint
 export const PLAYER_MAX_HEALTH = 100;
 export const HORSE_MOUNT_DISTANCE = 3; // meters
 
+// Collision — agents are circles in the XZ plane
+export const PLAYER_COLLISION_RADIUS = 0.45;
+export const HORSE_COLLISION_RADIUS = 0.9;
+export const CAMPFIRE_COLLISION_RADIUS = 0.85;
+
 // Dead Eye
 export const DEADEYE_SLOW_FACTOR = 0.2; // 20% time scale
 export const DEADEYE_MAX_TARGETS = 4;

@@ -205,3 +205,32 @@ require-corp` header (ADR for Havok headers) on the deployed site.
   replacing it — coupling weather and sky intentionally, in one direction only
 - `WeatherController` is world-layer and remains unit-untested (needs WebGL);
   the underlying `WeatherSystem` state machine stays covered by Vitest
+
+---
+
+## ADR-011 — Custom 2D circle collision instead of Havok
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** The player and horse could walk through trees, cacti, rocks, the
+campfire, and each other — a visible immersion gap. Havok (WASM) is scaffolded
+and the COOP/COEP headers are in place, but activating full rigid-body physics
+is a large change that can't be browser-verified here before auto-deploy.
+
+**Decision:** Add a lightweight `CollisionSystem` in `core/physics/` — pure 2D
+(XZ-plane) circle depenetration, zero Babylon imports. World props register as
+static circles as chunks stream; the player and horse are dynamic circles
+resolved each frame. NPCs are intentionally left non-colliding for now.
+
+**Consequences:**
+- Fits YAGNI: solves the actual gap without a physics engine or new infra
+- The logic is pure, so it's unit-tested (8 tests) — unlike a Havok integration
+- Approximation, not simulation: collisions are circles, depenetration is
+  single-pass, and very high speeds could tunnel thin obstacles (mitigated by
+  step sizes << collider radii). No slopes/verticality — terrain height is
+  still a separate sampler.
+- Havok stays scaffolded for if/when true physics (ragdolls, projectiles,
+  stacking) is actually needed; this does not preclude it.
+- **Known gap:** NPCs ignore obstacles and can clip vegetation — acceptable for
+  the slice; revisit if NPC pathing becomes prominent.

@@ -7,6 +7,7 @@ import { HonorSystem }       from "@core/reputation/HonorSystem";
 import { DeadEyeSystem }     from "@core/combat/DeadEyeSystem";
 import { EncounterManager }  from "@core/encounter/EncounterManager";
 import { HorseBondingSystem }from "@core/horse/HorseBondingSystem";
+import { CollisionSystem }    from "@core/physics/CollisionSystem";
 
 // World
 import { TerrainManager }    from "@world/terrain/TerrainManager";
@@ -33,7 +34,12 @@ import { AudioManager }      from "./audio/AudioManager";
 
 // Bus
 import { bus } from "@shared/EventBus";
-import { MAX_TERRAIN_HEIGHT } from "@shared/constants";
+import {
+  MAX_TERRAIN_HEIGHT,
+  PLAYER_COLLISION_RADIUS,
+  HORSE_COLLISION_RADIUS,
+  CAMPFIRE_COLLISION_RADIUS,
+} from "@shared/constants";
 
 async function main(): Promise<void> {
   const canvas  = document.getElementById("game-canvas") as HTMLCanvasElement;
@@ -57,20 +63,22 @@ async function main(): Promise<void> {
   const deadEye     = new DeadEyeSystem();
   const encounterMgr= new EncounterManager();
   const horseBonding= new HorseBondingSystem();
+  const collision   = new CollisionSystem();
 
   // ── World ─────────────────────────────────────────────────────────────────
   const terrain     = new TerrainManager(scene);
   const sky         = new SkyController(scene, dayNight);
   const weatherCtrl = new WeatherController(scene, weatherSys);
-  const vegetation  = new VegetationManager(scene, terrain);
+  const vegetation  = new VegetationManager(scene, terrain, collision);
 
   // ── Entities ──────────────────────────────────────────────────────────────
-  const player = new PlayerController(scene, deadEye, terrain);
-  const horse  = new HorseController(scene, horseBonding, terrain, player);
+  const player = new PlayerController(scene, deadEye, terrain, collision);
+  const horse  = new HorseController(scene, horseBonding, terrain, player, collision);
 
   // Campfire near spawn — a rest point
   const campX = 6, campZ = 6;
   const campfire = new Campfire(scene, { x: campX, y: terrain.sampleHeight(campX, campZ), z: campZ });
+  collision.addStatic("campfire", campX, campZ, CAMPFIRE_COLLISION_RADIUS);
 
   // Register player + horse + campfire meshes as shadow casters
   const sg = sky.getShadowGenerator();
@@ -262,6 +270,17 @@ async function main(): Promise<void> {
     vegetation.update(playerPos);
     sky.update(delta);
     weatherCtrl.update(playerPos, delta); // runs after sky → owns final fog
+
+    // Refresh dynamic colliders before agents move. The horse is always a
+    // collider; the player is one only on foot (when mounted the player shares
+    // the horse's position, which would make the horse collide with itself).
+    const horsePos = horse.getPosition();
+    collision.setDynamic("horse", horsePos.x, horsePos.z, HORSE_COLLISION_RADIUS);
+    if (player.isMountedOnHorse()) {
+      collision.removeDynamic("player");
+    } else {
+      collision.setDynamic("player", playerPos.x, playerPos.z, PLAYER_COLLISION_RADIUS);
+    }
 
     // Entities
     player.update(gameDelta);

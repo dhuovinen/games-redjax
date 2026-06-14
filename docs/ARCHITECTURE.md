@@ -72,6 +72,7 @@ main          → EventBus["weapon:fired"]      → AudioManager (gunshot synth)
 | `src/core/combat/DeadEyeSystem.ts` | Dead Eye state machine |
 | `src/core/encounter/EncounterManager.ts` | Proximity-based random encounters |
 | `src/core/reputation/HonorSystem.ts` | Float honor value, listens to `combat:npcKilled` |
+| `src/core/physics/CollisionSystem.ts` | Pure 2D circle collision (depenetration) |
 | `src/world/terrain/TerrainManager.ts` | LOD chunk streaming, vertex-colored terrain |
 | `src/world/environment/SkyController.ts` | SkyMaterial scattering, sun/moon, PCF shadows, fog |
 | `src/world/environment/PostProcessController.ts` | Bloom, ACES, vignette, grain, SSAO, MSAA |

@@ -11,10 +11,12 @@ import {
   PLAYER_MOVE_SPEED,
   PLAYER_SPRINT_SPEED,
   PLAYER_MAX_HEALTH,
+  PLAYER_COLLISION_RADIUS,
 } from "@shared/constants";
 import { PlayerVisual } from "./PlayerVisual";
 import type { DeadEyeSystem } from "@core/combat/DeadEyeSystem";
 import type { TerrainManager } from "@world/terrain/TerrainManager";
+import type { CollisionSystem } from "@core/physics/CollisionSystem";
 
 export class PlayerController {
   /** Invisible root mesh — used for position tracking and camera target only */
@@ -33,7 +35,8 @@ export class PlayerController {
   constructor(
     private scene: Scene,
     private deadEye: DeadEyeSystem,
-    private terrain: TerrainManager
+    private terrain: TerrainManager,
+    private collision: CollisionSystem
   ) {
     // Invisible thin slab — sole purpose is to carry position/rotation for camera
     this.mesh = MeshBuilder.CreateBox("playerRoot", { width: 0.4, height: 0.1, depth: 0.4 }, scene);
@@ -120,7 +123,15 @@ export class PlayerController {
 
     if (this.isMoving) {
       move.normalize().scaleInPlace(speed * deltaSeconds);
-      this.mesh.position.addInPlace(move);
+      const fromX = this.mesh.position.x;
+      const fromZ = this.mesh.position.z;
+      // Resolve the desired step against world obstacles (ignore our own entry)
+      const resolved = this.collision.resolve(
+        fromX, fromZ, fromX + move.x, fromZ + move.z,
+        PLAYER_COLLISION_RADIUS, "player"
+      );
+      this.mesh.position.x = resolved.x;
+      this.mesh.position.z = resolved.z;
       this.facingAngle = Math.atan2(move.x, move.z);
     }
 
