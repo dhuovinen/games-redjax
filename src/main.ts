@@ -27,6 +27,9 @@ import { Minimap }           from "@ui/hud/Minimap";
 import { PauseMenu }         from "@ui/menus/PauseMenu";
 import { RestMenu }          from "@ui/menus/RestMenu";
 
+// Audio
+import { AudioManager }      from "./audio/AudioManager";
+
 // Bus
 import { bus } from "@shared/EventBus";
 import { MAX_TERRAIN_HEIGHT } from "@shared/constants";
@@ -92,6 +95,9 @@ async function main(): Promise<void> {
     (open) => { restOpen = open; }
   );
 
+  // Procedural audio (wind, gunshots, melee thuds, hoofbeats). M toggles mute.
+  const audio = new AudioManager();
+
   // Dead Eye canvas filter for sepia slow-motion feel
   bus.on("deadeye:activated",   () => { canvas.style.filter = "sepia(0.45) contrast(1.15)"; });
   bus.on("deadeye:deactivated", () => { canvas.style.filter = ""; });
@@ -132,8 +138,9 @@ async function main(): Promise<void> {
   bus.on("deadeye:deactivated", () => {
     // executeTargets() returns locked list then clears it
     const targets = deadEye.executeTargets();
-    targets.forEach((targetId) => {
+    targets.forEach((targetId, i) => {
       activeNpcs.forEach((npcs) => npcs.find((n) => n.id === targetId)?.kill());
+      setTimeout(() => bus.emit("weapon:fired"), i * 130); // staggered volley
     });
   });
 
@@ -177,6 +184,7 @@ async function main(): Promise<void> {
       deadEye.lockTarget(npcId);
     } else {
       // Direct shot — find and kill NPC
+      bus.emit("weapon:fired");
       activeNpcs.forEach((npcs) => npcs.find((n) => n.id === npcId)?.kill());
     }
   };
@@ -225,6 +233,9 @@ async function main(): Promise<void> {
     const nearFire = !player.isMountedOnHorse() &&
       Vector3.Distance(playerPos, campfire.getPosition()) < 4;
     restMenu.setNearby(nearFire);
+
+    // Hoofbeats while riding
+    audio.update(player.isMountedOnHorse() && horse.isMovingNow(), horse.isGallopingNow());
 
     // NPC AI
     activeNpcs.forEach((npcs) => {

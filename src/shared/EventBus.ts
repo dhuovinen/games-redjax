@@ -25,6 +25,7 @@ export interface GameEvents {
   // Combat
   "combat:npcKilled": { npcId: string; isInnocent: boolean };
   "npc:attackedPlayer": { damage: number };
+  "weapon:fired": void;
   // Horse bonding
   "horse:bondingIncreased": { level: number };
 }

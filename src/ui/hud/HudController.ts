@@ -71,6 +71,7 @@ export class HudController {
         <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">E</span> Mount</span>
         <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">Q</span> Dead Eye</span>
         <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">Click</span> Shoot</span>
+        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">M</span> Mute</span>
       </div>
     `;
   }

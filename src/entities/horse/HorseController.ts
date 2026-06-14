@@ -23,6 +23,7 @@ export class HorseController {
 
   private isMounted = false;
   private isGalloping = false;
+  private moving = false;
   private keys = new Set<string>();
 
   constructor(
@@ -105,6 +106,7 @@ export class HorseController {
          this.keys.has("KeyD") || this.keys.has("ArrowRight"))
       : Vector3.Distance(this.player.getPosition(), this.mesh.position) > HORSE_FOLLOW_STOP;
 
+    this.moving = isMoving;
     this.visual.animate(isMoving, this.isGalloping, deltaSeconds);
   }
 
@@ -156,6 +158,14 @@ export class HorseController {
 
   getMountStatus(): boolean {
     return this.isMounted;
+  }
+
+  isMovingNow(): boolean {
+    return this.moving;
+  }
+
+  isGallopingNow(): boolean {
+    return this.isMounted && this.isGalloping && this.moving;
   }
 
   getPosition(): Vector3 {

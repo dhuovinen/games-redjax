@@ -44,8 +44,8 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Build + deploy to static host (Vercel, auto-deploy on push)
 - [x] Camp/fire rest mechanic (time skip + health regen)
 - [x] Complete bandit encounter arc (chase → attack → clear → death/respawn)
+- [x] Procedural audio (wind, gunshots, melee thuds, hoofbeats — Web Audio)
 - [ ] Encounter: injured traveler dialogue pop-up
-- [ ] Ambient audio (wind loop, gunshots, hoofbeats — Web Audio)
 - [ ] Settings (volume, sensitivity)
 - [ ] Performance pass — profile and tune LOD distances
 

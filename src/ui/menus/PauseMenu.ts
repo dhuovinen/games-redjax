@@ -53,6 +53,8 @@ export class PauseMenu {
         ${row("E", "Mount / Dismount")}
         ${row("Q", "Dead Eye")}
         ${row("Left Click", "Shoot / Lock target")}
+        ${row("R", "Rest at campfire")}
+        ${row("M", "Mute audio")}
         ${row("Esc", "Pause / Resume")}
       </div>
       <button id="pause-resume" style="margin-top:8px;padding:10px 28px;font-family:serif;font-size:14px;letter-spacing:3px;text-transform:uppercase;color:#1a120a;background:linear-gradient(180deg,#d9b65a,#b8923a);border:none;border-radius:4px;cursor:pointer;">Resume</button>
