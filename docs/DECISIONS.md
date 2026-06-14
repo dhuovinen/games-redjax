@@ -146,3 +146,29 @@ the streaming boundary, so cutting it would be visible.
   (player, horse, NPCs, campfire flame, sky) are deliberately left unfrozen
 - New runtime materials (NPCs spawned mid-game) still compile correctly under
   `blockMaterialDirtyMechanism`, which only blocks per-frame dirty scanning
+
+---
+
+## ADR-009 — No CI test gate yet (accepted risk)
+
+**Date:** 2026-06-14  
+**Status:** Accepted
+
+**Context:** A 48-test Vitest suite covers `core/` + the EventBus. Pushes to
+`main` auto-deploy to Vercel. A GitHub Actions workflow could run the suite on
+every push/PR and block deploys on failure.
+
+**Decision:** Do **not** add a CI test gate at this stage. The suite is run
+locally with `npm run test:run` before pushing.
+
+**Risk (explicitly accepted):**
+- Nothing enforces the suite on push. A regression in `core/` can land on
+  `main` and **auto-deploy to production without the tests ever running** —
+  the failure would only surface if someone runs tests locally or plays the
+  build. The green suite can also silently rot as code changes.
+- Mitigation for now: solo developer; run `npm run test:run` (and
+  `npm run build`) before every push. This relies on discipline, not tooling.
+
+**Revisit when:** a second contributor joins, PRs become the norm, or a
+test-passing regression reaches production. At that point add a GitHub Actions
+workflow (`npm ci && npm run test:run && npm run build`) gating `main`.
