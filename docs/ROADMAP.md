@@ -50,6 +50,7 @@ Goal: Demo-ready. 10-minute play session feels cinematic.
 - [x] Performance pass — DPI cap, frozen static meshes/materials, picking opt
 - [x] Weather made visible — rain, weather fog, storm lightning + thunder
 - [x] Collision — player/horse/NPCs vs vegetation, rocks, campfire (custom 2D circles)
+- [x] NPC obstacle-aware steering (reactive avoidance around static props)
 
 ## Deferred (Post-Slice)
 

@@ -8,7 +8,7 @@ import {
 } from "@babylonjs/core";
 import { bus } from "@shared/EventBus";
 import { PlayerVisual, BANDIT_COLORS, TRAVELER_COLORS } from "@entities/player/PlayerVisual";
-import { NPC_COLLISION_RADIUS } from "@shared/constants";
+import { NPC_COLLISION_RADIUS, NPC_AVOID_LOOKAHEAD } from "@shared/constants";
 import type { Vec3 } from "@shared/types";
 import type { CollisionSystem } from "@core/physics/CollisionSystem";
 
@@ -88,13 +88,19 @@ export class NpcController {
       const dir = playerPosition.subtract(this.mesh.position);
       dir.y = 0;
       dir.normalize();
-      this.facingAngle = Math.atan2(dir.x, dir.z);
+      // Steer the heading around static props in the way before committing
+      const heading = this.collision.steer(
+        this.mesh.position.x, this.mesh.position.z,
+        dir.x, dir.z, NPC_COLLISION_RADIUS, NPC_AVOID_LOOKAHEAD, this.id
+      );
+      this.facingAngle = Math.atan2(heading.x, heading.z);
       if (dist > NPC_STOP_RANGE) {
-        const step = dir.scale(NPC_CHASE_SPEED * deltaSeconds);
+        const stepLen = NPC_CHASE_SPEED * deltaSeconds;
         const fromX = this.mesh.position.x;
         const fromZ = this.mesh.position.z;
         const resolved = this.collision.resolve(
-          fromX, fromZ, fromX + step.x, fromZ + step.z,
+          fromX, fromZ,
+          fromX + heading.x * stepLen, fromZ + heading.z * stepLen,
           NPC_COLLISION_RADIUS, this.id
         );
         this.mesh.position.x = resolved.x;

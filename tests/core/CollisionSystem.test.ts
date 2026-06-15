@@ -58,6 +58,47 @@ describe("CollisionSystem", () => {
     expect(r).toEqual({ x: 0.1, z: 0 }); // nothing left to push against
   });
 
+  describe("steer (obstacle avoidance)", () => {
+    const unit = (x: number, z: number) => Math.hypot(x, z);
+
+    it("returns the heading unchanged when the path is clear", () => {
+      cs.addStatic("rock", 0, 10, 1); // off to the side, not ahead
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5);
+      expect(r).toEqual({ x: 1, z: 0 });
+    });
+
+    it("ignores obstacles behind the agent", () => {
+      cs.addStatic("rock", -3, 0, 1); // directly behind
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5);
+      expect(r).toEqual({ x: 1, z: 0 });
+    });
+
+    it("ignores obstacles beyond the look-ahead", () => {
+      cs.addStatic("rock", 20, 0, 1);
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5);
+      expect(r).toEqual({ x: 1, z: 0 });
+    });
+
+    it("deflects around an obstacle dead ahead and stays unit length", () => {
+      cs.addStatic("rock", 3, 0, 1);
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5);
+      expect(unit(r.x, r.z)).toBeCloseTo(1, 6);
+      expect(Math.abs(r.z)).toBeGreaterThan(0.2); // gained a lateral component
+    });
+
+    it("steers away from the side the obstacle is on", () => {
+      cs.addStatic("rock", 3, 0.5, 1); // slightly to +z
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5);
+      expect(r.z).toBeLessThan(0); // veers toward −z, away from the rock
+    });
+
+    it("respects ignoreId", () => {
+      cs.addStatic("self", 3, 0, 1);
+      const r = cs.steer(0, 0, 1, 0, 0.4, 5, "self");
+      expect(r).toEqual({ x: 1, z: 0 });
+    });
+  });
+
   it("depenetrates against multiple overlapping colliders", () => {
     cs.addStatic("a", 0, 0, 1);
     cs.addStatic("b", 3, 0, 1);

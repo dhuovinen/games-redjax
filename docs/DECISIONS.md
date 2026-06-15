@@ -241,3 +241,11 @@ movement against the world, so the player/horse/other NPCs avoid them and they
 no longer clip vegetation. Colliders are removed on death and dispose. NPC↔NPC
 and NPC↔world use the same single-pass depenetration, so the approximation
 caveats above still apply.
+
+**Update (2026-06-15):** NPCs now steer *around* obstacles rather than only
+depenetrating after hitting them. `CollisionSystem.steer()` is a pure reactive
+avoidance query — it looks ahead along the desired heading for the nearest
+blocking static prop and returns a tangential heading around it. This is local
+steering, not global pathfinding: a bandit can still be briefly delayed by a
+large/concave cluster of props, but no longer wedges against a single rock.
+Full A*/navmesh is deferred until NPC navigation genuinely demands it (YAGNI).
