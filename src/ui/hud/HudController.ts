@@ -35,43 +35,60 @@ export class HudController {
   }
 
   private buildTemplate(): string {
+    const ctrl = (key: string, action: string) =>
+      `<span style="color:rgba(205,185,145,0.65);font-size:10px;letter-spacing:1px;white-space:nowrap;">` +
+      `<span style="color:rgba(228,208,162,0.95);">${key}</span> ${action}</span>`;
+
     return `
-      <div style="position:absolute;bottom:24px;left:24px;display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:#c0392b;font-size:11px;font-family:serif;text-transform:uppercase;letter-spacing:2px;">Health</span>
-          <div style="width:120px;height:6px;background:#1a0a0a;border:1px solid #5a1a1a;border-radius:3px;">
-            <div id="health-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#c0392b,#e74c3c);border-radius:3px;transition:width 0.3s;"></div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-          <span style="color:#d4a017;font-size:11px;font-family:serif;text-transform:uppercase;letter-spacing:2px;">Dead Eye</span>
-          <div style="width:80px;height:6px;background:#1a1000;border:1px solid #5a4000;border-radius:3px;">
-            <div id="deadeye-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#d4a017,#f39c12);border-radius:3px;transition:width 0.3s;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div style="position:absolute;bottom:24px;right:24px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
-        <div style="display:flex;align-items:center;gap:6px;">
-          <span style="color:#bbb;font-size:11px;font-family:serif;letter-spacing:1px;">Honor</span>
-          <div id="honor-dot" style="width:12px;height:12px;border-radius:50%;background:#95a5a6;box-shadow:0 0 6px #95a5a6;transition:background 0.5s,box-shadow 0.5s;"></div>
-        </div>
-        <div id="time-display" style="color:#bbb;font-size:11px;font-family:serif;letter-spacing:2px;">8:00</div>
-      </div>
-
-      <div id="notification" style="position:absolute;top:80px;left:50%;transform:translateX(-50%);color:#d4a017;font-size:13px;font-family:serif;letter-spacing:3px;text-transform:uppercase;opacity:0;transition:opacity 0.4s;text-shadow:0 0 8px rgba(212,160,23,0.6);pointer-events:none;text-align:center;white-space:pre-line;line-height:1.8;"></div>
-
+      <!-- Center crosshair -->
       <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:4px;height:4px;background:#fff;border-radius:50%;opacity:0.7;pointer-events:none;"></div>
 
+      <!-- Event notification -->
+      <div id="notification" style="position:absolute;top:80px;left:50%;transform:translateX(-50%);color:#d4a017;font-size:13px;font-family:serif;letter-spacing:3px;text-transform:uppercase;opacity:0;transition:opacity 0.4s;text-shadow:0 0 8px rgba(212,160,23,0.6);pointer-events:none;text-align:center;white-space:pre-line;line-height:1.8;"></div>
+
+      <!-- Damage vignette flash -->
       <div id="damage-flash" style="position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 0.45s;background:radial-gradient(ellipse at center, rgba(140,0,0,0) 45%, rgba(150,0,0,0.55) 100%);"></div>
 
-      <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:18px;pointer-events:none;white-space:nowrap;">
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">WASD</span> Move</span>
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">Shift</span> Sprint</span>
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">E</span> Mount</span>
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">Q</span> Dead Eye</span>
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">🖱 Left-Click</span> Shoot</span>
-        <span style="color:rgba(200,180,140,0.55);font-size:10px;font-family:serif;letter-spacing:1px;"><span style="color:rgba(220,200,160,0.85);">M</span> Mute</span>
+      <!-- Fixed footer bar — solid backdrop so the HUD stays legible over any scene -->
+      <div style="position:absolute;left:0;right:0;bottom:0;display:flex;flex-direction:column;gap:7px;padding:9px 22px;font-family:serif;pointer-events:none;background:linear-gradient(180deg,rgba(30,21,12,0.80),rgba(15,10,5,0.94));border-top:1px solid rgba(150,120,70,0.55);box-shadow:0 -6px 18px rgba(0,0,0,0.45);">
+
+        <!-- Row 1: status -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;">
+          <div style="display:flex;align-items:center;gap:22px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="color:#e0726a;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Health</span>
+              <div style="width:130px;height:7px;background:#1a0a0a;border:1px solid #5a1a1a;border-radius:3px;">
+                <div id="health-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#c0392b,#e74c3c);border-radius:3px;transition:width 0.3s;"></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="color:#e6b53f;font-size:11px;text-transform:uppercase;letter-spacing:2px;">Dead Eye</span>
+              <div style="width:90px;height:7px;background:#1a1000;border:1px solid #5a4000;border-radius:3px;">
+                <div id="deadeye-fill" style="height:100%;width:100%;background:linear-gradient(90deg,#d4a017,#f39c12);border-radius:3px;transition:width 0.3s;"></div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="color:#cbbf9e;font-size:11px;letter-spacing:1px;">Honor</span>
+              <div id="honor-dot" style="width:12px;height:12px;border-radius:50%;background:#95a5a6;box-shadow:0 0 6px #95a5a6;transition:background 0.5s,box-shadow 0.5s;"></div>
+            </div>
+            <span id="time-display" style="color:#e3d2a6;font-size:12px;letter-spacing:2px;">8:00</span>
+          </div>
+        </div>
+
+        <!-- Row 2: controls -->
+        <div style="display:flex;flex-wrap:wrap;gap:14px;border-top:1px solid rgba(150,120,70,0.18);padding-top:6px;">
+          ${ctrl("WASD", "Move")}
+          ${ctrl("Shift", "Sprint")}
+          ${ctrl("E", "Mount")}
+          ${ctrl("Q", "Dead Eye")}
+          ${ctrl("🖱 Left-Click", "Shoot")}
+          ${ctrl("R", "Rest")}
+          ${ctrl("F", "Talk")}
+          ${ctrl("M", "Mute")}
+          ${ctrl("Esc", "Pause")}
+        </div>
       </div>
     `;
   }
