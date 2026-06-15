@@ -165,6 +165,11 @@ export class TerrainManager {
       mesh.setVerticesData(VertexBuffer.ColorKind, colors);
       mesh.hasVertexAlpha = false;
     }
+
+    // Vertices were raised from a flat plane — recompute the bounding box so
+    // frustum culling uses the real hill extents and doesn't drop the chunk
+    // when the camera rotates.
+    mesh.refreshBoundingInfo();
   }
 
   /**
